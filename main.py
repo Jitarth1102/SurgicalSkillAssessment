@@ -7,10 +7,10 @@ from scoring_system import ScoringSystem
 
 def main():
     # Define file paths
-    video_file = 'path_to_video_file.mp4'
-    timestamp_file = 'video01-timestamp.txt'
-    phase_file = 'video01-phase.txt'
-    tool_file = 'video01-tool.txt'
+    video_file = './cholec80/videos/video01.mp4'
+    timestamp_file = './cholec80/videos/video01-timestamp.txt'
+    phase_file = './cholec80/phase_annotations/video01-phase.txt'
+    tool_file = './cholec80/tool_annotations/video01-tool.txt'
 
     # Parse the annotations
     phase_annotations = parse_phase_annotations(phase_file)

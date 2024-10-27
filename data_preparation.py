@@ -40,8 +40,11 @@ def extract_frames_from_video(video_file, timestamp_file):
     with open(timestamp_file, 'r') as f:
         lines = f.readlines()[1:]  # Skip the header
         for line in lines:
-            frame = int(line.strip().split('\t')[0])  # Frame number
-            timestamps.append(frame)
+            timestamp = line.strip().split('\t')[0]
+            # Convert timestamp to seconds
+            h, m, s = map(float, timestamp.split(':'))
+            total_seconds = int(h * 3600 + m * 60 + s)
+            timestamps.append(total_seconds)
 
     frames = []
     for timestamp in timestamps:
