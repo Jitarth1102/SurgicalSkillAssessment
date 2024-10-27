@@ -1,47 +1,60 @@
-from data_preparation import load_m2cai_annotations, load_cholec80_annotations, preprocess_video
+from data_preparation import parse_phase_annotations, parse_tool_annotations, extract_frames_from_video
 from tool_tracking import ToolTracker
-from scoring_system import ScoringSystem
+from cognitive_load import CognitiveLoadMonitor
 from error_detection import ErrorDetector
+from performance_tracking import PerformanceTracker
+from scoring_system import ScoringSystem
 
 def main():
-    # Load annotations and videos
-    m2cai_annotations = load_m2cai_annotations('m2cai_annotations.csv')
-    cholec80_annotations = load_cholec80_annotations('cholec80_annotations_dir')
-    video_frames = preprocess_video('surgery_video.mp4')
+    # Define file paths
+    video_file = 'path_to_video_file.mp4'
+    timestamp_file = 'video01-timestamp.txt'
+    phase_file = 'video01-phase.txt'
+    tool_file = 'video01-tool.txt'
+
+    # Parse the annotations
+    phase_annotations = parse_phase_annotations(phase_file)
+    tool_annotations = parse_tool_annotations(tool_file)
+
+    # Extract frames from the video based on the timestamp file
+    frames = extract_frames_from_video(video_file, timestamp_file)
 
     # Initialize components
     tool_tracker = ToolTracker()
-    scoring_system = ScoringSystem()
+    cognitive_monitor = CognitiveLoadMonitor()
     error_detector = ErrorDetector()
+    scoring_system = ScoringSystem()
+    performance_tracker = PerformanceTracker()
 
-    # Tracking tools and calculating metrics
-    bbox = (50, 50, 100, 100)  # Example initial bounding box for tool
-    tool_tracker.initialize_tracker(video_frames[0], bbox)
-    tool_positions = tool_tracker.track_tool(video_frames)
-    smoothness_score = tool_tracker.calculate_smoothness(tool_positions)
+    # Track tools and calculate metrics
+    tool_positions = tool_tracker.track_tools(frames)
+    smoothness = tool_tracker.calculate_smoothness(tool_positions)
 
     # Evaluate performance for each phase
     final_score = 0
-    for phase in cholec80_annotations:
-        phase_name = phase['Phase'].iloc[0]
-        phase_duration = len(phase)  # Number of frames in the phase
-        
-        # Define expected path (mockup for illustration)
-        expected_path = [(50 + i, 50 + i) for i in range(len(phase))]
+    expected_duration = 300  # Dummy expected duration for each phase
+    for frame_number, frame in frames:
+        phase = phase_annotations.get(frame_number, "Unknown")
+        efficiency = scoring_system.calculate_efficiency(len(frames), expected_duration)
+        precision = scoring_system.calculate_precision(tool_positions, tool_annotations)
+        cognitive_load = cognitive_monitor.get_load_metrics()
 
-        precision_score = scoring_system.calculate_precision(tool_positions[:phase_duration], expected_path)
-        efficiency_score = scoring_system.calculate_efficiency(phase_duration, expected_duration=300)
-        
         performance_metrics = {
-            'precision': precision_score,
-            'efficiency': efficiency_score,
-            'smoothness': smoothness_score,
+            'efficiency': efficiency,
+            'precision': precision,
+            'smoothness': smoothness,
+            'cognitive_load': cognitive_load
         }
-        
-        phase_score = scoring_system.assign_score(phase_name, performance_metrics)
-        final_score += phase_score
 
-    print(f"Final Surgery Score: {final_score}")
+        score = scoring_system.assign_score(phase, performance_metrics)
+        final_score += score
 
-if __name__ == '__main__':
+    # Log performance and visualize
+    surgeon_id = 1
+    performance_tracker.log_performance(surgeon_id, final_score, "2024-10-18")
+    performance_tracker.visualize_trend()
+
+    print(f'Final Surgical Skill Score: {final_score}')
+
+if __name__ == "__main__":
     main()

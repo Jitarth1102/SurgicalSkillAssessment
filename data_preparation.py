@@ -1,42 +1,54 @@
-import pandas as pd
 import cv2
-import os
 
-def load_m2cai_annotations(annotation_path):
+def parse_phase_annotations(phase_file):
     """
-    Load M2CAI workflow annotations, which include timestamps and phases.
+    Parse the phase annotations file.
+    Returns a dictionary with frame number as keys and the corresponding phase as values.
     """
-    annotations = pd.read_csv(annotation_path)
-    annotations['StartTime'] = pd.to_datetime(annotations['StartTime'], format='%H:%M:%S')
-    annotations['EndTime'] = pd.to_datetime(annotations['EndTime'], format='%H:%M:%S')
-    return annotations
+    phase_annotations = {}
+    with open(phase_file, 'r') as file:
+        lines = file.readlines()[1:]  # Skip the header
+        for line in lines:
+            frame, phase = line.strip().split('\t')
+            phase_annotations[int(frame)] = phase  # Store phase for each frame
+    return phase_annotations
 
-def load_cholec80_annotations(annotation_dir):
+def parse_tool_annotations(tool_file):
     """
-    Load Cholec80 phase annotations, which include phase labels and timestamps for each surgery.
+    Parse the tool annotations file.
+    Returns a dictionary with frame number as keys and tool usage as values.
     """
-    annotation_files = [f for f in os.listdir(annotation_dir) if f.endswith('.txt')]
-    cholec80_annotations = []
+    tool_annotations = {}
+    with open(tool_file, 'r') as file:
+        lines = file.readlines()[1:]  # Skip the header
+        for line in lines:
+            values = line.strip().split('\t')
+            frame = int(values[0])
+            tools = list(map(int, values[1:]))  # Tool usage as a list of binary values
+            tool_annotations[frame] = tools
+    return tool_annotations
+
+def extract_frames_from_video(video_file, timestamp_file):
+    """
+    Extract frames from the video at given timestamps.
+    Returns a list of frames and their corresponding frame numbers.
+    """
+    cap = cv2.VideoCapture(video_file)
+    timestamps = []
     
-    for file in annotation_files:
-        annotations = pd.read_csv(os.path.join(annotation_dir, file), delimiter=' ', header=None)
-        annotations.columns = ['Time', 'Phase']
-        cholec80_annotations.append(annotations)
-    
-    return cholec80_annotations
+    # Parse the timestamp file to get the frames to extract
+    with open(timestamp_file, 'r') as f:
+        lines = f.readlines()[1:]  # Skip the header
+        for line in lines:
+            frame = int(line.strip().split('\t')[0])  # Frame number
+            timestamps.append(frame)
 
-def preprocess_video(video_path):
-    """
-    Load video file and return frames. Frames will be processed later for tool tracking.
-    """
-    cap = cv2.VideoCapture(video_path)
     frames = []
-    
-    while cap.isOpened():
+    for timestamp in timestamps:
+        cap.set(cv2.CAP_PROP_POS_FRAMES, timestamp)
         ret, frame = cap.read()
-        if not ret:
-            break
-        frames.append(frame)
+        if ret:
+            frames.append((timestamp, frame))  # Store frame number and frame data
     
     cap.release()
     return frames

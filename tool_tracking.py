@@ -1,31 +1,19 @@
-import cv2
 import numpy as np
 
 class ToolTracker:
     def __init__(self):
-        self.tracker_type = 'KCF'  # Use KCF (Kernelized Correlation Filter) tracker for tool tracking
-        self.tracker = cv2.TrackerKCF_create()
+        pass
 
-    def initialize_tracker(self, first_frame, bbox):
+    def track_tools(self, frames):
         """
-        Initialize the tracker with the bounding box (bbox) around the surgical tool in the first frame.
+        Dummy tool tracking function. 
+        Actual implementation would involve a tool tracking algorithm (e.g., YOLO, DeepLab).
         """
-        self.tracker.init(first_frame, bbox)
-    
-    def track_tool(self, video_frames):
-        """
-        Track the surgical tool across the video frames.
-        """
-        tool_positions = []
-
-        for frame in video_frames:
-            success, bbox = self.tracker.update(frame)
-            if success:
-                # Append the center of the bbox as the tool position
-                tool_positions.append(((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2))
-            else:
-                tool_positions.append(None)
-
+        tool_positions = {}
+        for frame_number, frame in frames:
+            # Placeholder for tool tracking logic
+            # Assume we get tool positions as (x, y) coordinates
+            tool_positions[frame_number] = (100, 100)  # Dummy value
         return tool_positions
 
     def calculate_smoothness(self, tool_positions):
@@ -33,11 +21,14 @@ class ToolTracker:
         Calculate smoothness based on the positional changes of the tool over time.
         """
         smoothness_scores = []
-        for i in range(1, len(tool_positions)):
-            if tool_positions[i] is not None and tool_positions[i-1] is not None:
-                diff = np.linalg.norm(np.array(tool_positions[i]) - np.array(tool_positions[i-1]))
+        previous_position = None
+
+        for frame_number, position in tool_positions.items():
+            if previous_position is not None:
+                diff = np.linalg.norm(np.array(position) - np.array(previous_position))
                 smoothness_scores.append(diff)
-        
+            previous_position = position
+
         # A lower average diff implies smoother movements
         smoothness = np.mean(smoothness_scores) if smoothness_scores else float('inf')
         return smoothness

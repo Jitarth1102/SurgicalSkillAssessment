@@ -14,10 +14,10 @@ class ScoringSystem:
         Compare tool positions with expected paths for the task and calculate precision.
         """
         total_deviation = 0
-        for pos, exp_pos in zip(tool_positions, expected_path):
-            if pos is not None and exp_pos is not None:
-                deviation = np.linalg.norm(np.array(pos) - np.array(exp_pos))
-                total_deviation += deviation
+        for frame_number, position in tool_positions.items():
+            expected_position = expected_path.get(frame_number, (100, 100))  # Dummy expected path
+            deviation = np.linalg.norm(np.array(position) - np.array(expected_position))
+            total_deviation += deviation
 
         precision_score = 1 / (1 + total_deviation)  # Inverse relationship between deviation and score
         return precision_score
@@ -30,8 +30,9 @@ class ScoringSystem:
         efficiency = performance_metrics['efficiency']
         precision = performance_metrics['precision']
         smoothness = performance_metrics['smoothness']
+        cognitive_load = performance_metrics['cognitive_load']
         
-        total_score = (efficiency * 0.4 + precision * 0.4 + smoothness * 0.2) * phase_complexity
+        total_score = (efficiency * 0.4 + precision * 0.3 + smoothness * 0.2 - cognitive_load * 0.1) * phase_complexity
         return total_score
 
     def get_phase_complexity(self, phase):
@@ -47,4 +48,4 @@ class ScoringSystem:
             "Cleaning": 0.7,
             "Final Inspection": 0.6,
         }
-        return complexity_map.get(phase, 1.0)  # Default complexity is 1.0
+        return complexity_map.get(phase, 1.0)
